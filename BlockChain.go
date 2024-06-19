@@ -5,6 +5,9 @@ import (
 	"strings"
 )
 
+const difficulty int = 3
+const reward float32 = 0.0002
+
 type BlockChain struct {
 	TransactionPool []Transaction
 	Chain           []*Block
@@ -61,4 +64,28 @@ func (bc *BlockChain) CopyTransactionsFromPool() []Transaction {
 		})
 	}
 	return t
+}
+
+func (bc *BlockChain) ValidProof(nonce int, transactions []Transaction) bool {
+	zeros := strings.Repeat("0", difficulty)
+	guessBlock := Block{
+		BlockNum:     len(bc.Chain),
+		Nonce:        nonce,
+		PreHash:      bc.Chain[len(bc.Chain)-1].Hash(),
+		Transactions: transactions,
+	}
+	guessHashstr := fmt.Sprintf("%x", guessBlock.Hash())
+	if guessHashstr[:difficulty] == zeros {
+		fmt.Println(guessHashstr)
+	}
+	return guessHashstr[:difficulty] == zeros
+}
+
+func (bc *BlockChain) ProofOfWork() int {
+	transactions := bc.CopyTransactionsFromPool()
+	nonce := 0
+	for !bc.ValidProof(nonce, transactions) {
+		nonce++
+	}
+	return nonce
 }
