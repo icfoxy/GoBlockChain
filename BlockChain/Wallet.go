@@ -14,14 +14,20 @@ import (
 )
 
 type Wallet struct {
-	privateKey *ecdsa.PrivateKey
-	publicKey  *ecdsa.PublicKey
-	addr       string
+	PrivateKey *ecdsa.PrivateKey
+	PublicKey  *ecdsa.PublicKey
+	Addr       string
 }
 
 type Signature struct {
 	R *big.Int
 	S *big.Int
+}
+
+type WalletTansfer struct {
+	PrivateKey string `json:"private_key"`
+	PublicKey  string `json:"public_key"`
+	Addr       string `json:"addr"`
 }
 
 func NewWallet() *Wallet {
@@ -30,30 +36,30 @@ func NewWallet() *Wallet {
 	if err != nil {
 		panic(err)
 	}
-	w.privateKey = privateKey
-	w.publicKey = &privateKey.PublicKey
-	w.addr = PublicKeyToAddr(*w.publicKey)
+	w.PrivateKey = privateKey
+	w.PublicKey = &privateKey.PublicKey
+	w.Addr = PublicKeyToAddr(*w.PublicKey)
 	return w
 }
 
 func (w *Wallet) GetPrivateKey() *ecdsa.PrivateKey {
-	return w.privateKey
+	return w.PrivateKey
 }
 
 func (w *Wallet) GetPrivateKeyStr() string {
-	return fmt.Sprintf("%x", w.privateKey.D.Bytes())
+	return fmt.Sprintf("%x", w.PrivateKey.D.Bytes())
 }
 
 func (w *Wallet) GetPublicKey() *ecdsa.PublicKey {
-	return w.publicKey
+	return w.PublicKey
 }
 
 func (w *Wallet) GetPublicKeyStr() string {
-	return fmt.Sprintf("%x%x", w.publicKey.X.Bytes(), w.publicKey.Y.Bytes())
+	return fmt.Sprintf("%x%x", w.PublicKey.X.Bytes(), w.PublicKey.Y.Bytes())
 }
 
 func (w *Wallet) GetAddr() string {
-	return w.addr
+	return w.Addr
 }
 
 func PublicKeyToAddr(publicKey ecdsa.PublicKey) string {
@@ -105,6 +111,14 @@ func (w *Wallet) NewSignedTransaction(
 	transaction := NewTransaction(senderAddr, receiverAddr, value, info)
 	sign := w.SignTransaction(transaction)
 	return transaction, sign
+}
+
+func (w *Wallet) ToTransfer() WalletTansfer {
+	return WalletTansfer{
+		PrivateKey: w.GetPrivateKeyStr(),
+		PublicKey:  w.GetPublicKeyStr(),
+		Addr:       w.Addr,
+	}
 }
 
 func (s Signature) ToString() string {
