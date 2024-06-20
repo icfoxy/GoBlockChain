@@ -1,4 +1,4 @@
-package main
+package chainserver
 
 import (
 	"net/http"

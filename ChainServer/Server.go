@@ -1,12 +1,14 @@
-package main
+package chainserver
 
 import (
 	"fmt"
 	"log"
 	"net/http"
+
+	blockchain "github.com/icfoxy/GoBlockChain/BlockChain"
 )
 
-var MainChain *BlockChain
+var MainChain *blockchain.BlockChain
 
 type Server struct {
 	Addr string
@@ -39,7 +41,7 @@ func (s *Server) Run() {
 	}
 }
 
-func initBlockChain() *BlockChain {
+func initBlockChain() *blockchain.BlockChain {
 	//todo: 从主网络拉取MainChain
-	return NewBlockChain()
+	return blockchain.NewBlockChain()
 }
