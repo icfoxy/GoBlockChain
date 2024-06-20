@@ -1,16 +1,27 @@
 package main
 
-import "fmt"
-
 func main() {
-	bc := NewBlockChain()
-	for i := 0; i < 10000; i++ {
-		bc.PushTransaction("000aa", "000bb", 2.0, "nothing")
-		bc.PushTransaction("000bb", "007aa", 2.02, "nothing either")
-		bc.PushTransaction("000cc", "000bb", 2.03, "nothing")
-	}
+	server := NewServer("localhost:", 8088)
+	server.AddHandlerFunc("/TestAlive", TestAliveHandler)
+	server.AddHandlerFunc("/GetChain", GetChainHandler)
+	MainChain.PushTransaction("a", "b", 2, "")
+	MainChain.Mine("mxh")
+	MainChain.PushTransaction("a", "c", 2, "")
+	MainChain.Mine("mxh")
+	MainChain.Print()
+	server.Run()
+	// wA := NewWallet()
+	// wB := NewWallet()
+	// wM := NewWallet()
+	// transaction, sign := wA.NewSignedTransaction(wA.addr, wB.addr, 1, "test")
+	// bc := NewBlockChain()
+	// bc.PushTransaction(MainNetAddr, wA.addr, 2, "")
+	// bc.Mine(wA.addr)
+	// bc.ValidAndPushTransaction(wA.publicKey, *sign, *transaction)
+	// fmt.Println("mining...")
+	// bc.Mine(wM.addr)
 	// bc.Print()
-	fmt.Println("mining...")
-	nonce := bc.ProofOfWork()
-	fmt.Println("nonce:", nonce)
+	// fmt.Println("A:", bc.GetTotalValue(wA.addr))
+	// fmt.Println("B:", bc.GetTotalValue(wB.addr))
+	// fmt.Println("M:", bc.GetTotalValue(wM.addr))
 }
