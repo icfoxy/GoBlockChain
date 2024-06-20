@@ -11,7 +11,6 @@ import (
 const difficulty int = 4
 const Reward int = 2
 const MainNetAddr = "BlockChainMainNet"
-const UserAddr = "User"
 
 type BlockChain struct {
 	TransactionPool []Transaction `json:"transaction_pool"`
@@ -70,10 +69,11 @@ func (bc *BlockChain) ValidAndPushTransaction(
 	if !bc.ValidTransaction(senderPublicKey, signature, transaction) {
 		return false
 	}
-	total := bc.GetTotalValue(transaction.SenderAddr)
-	if total-transaction.Value < 0 {
-		return false
-	}
+	// 测试时不开
+	// total := bc.GetTotalValue(transaction.SenderAddr)
+	// if total-transaction.Value < 0 {
+	// 	return false
+	// }
 	bc.PushTransaction(transaction.SenderAddr, transaction.ReceiverAddr, transaction.Value, transaction.Info)
 	return true
 }

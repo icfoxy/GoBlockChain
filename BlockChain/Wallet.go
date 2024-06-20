@@ -5,6 +5,7 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -106,6 +107,16 @@ func (w *Wallet) SignTransaction(transaction *Transaction) *Signature {
 	}
 }
 
+func SignTransaction(transaction *Transaction, privateKey *ecdsa.PrivateKey) *Signature {
+	data, _ := json.Marshal(transaction)
+	hash := sha256.Sum256([]byte(data))
+	r, s, _ := ecdsa.Sign(rand.Reader, privateKey, hash[:])
+	return &Signature{
+		R: r,
+		S: s,
+	}
+}
+
 func (w *Wallet) NewSignedTransaction(
 	senderAddr, receiverAddr string, value int, info string) (*Transaction, *Signature) {
 	transaction := NewTransaction(senderAddr, receiverAddr, value, info)
@@ -123,4 +134,47 @@ func (w *Wallet) ToTransfer() WalletTansfer {
 
 func (s Signature) ToString() string {
 	return fmt.Sprintf("%x%x", s.R, s.S)
+}
+
+func StringToPrivateKey(privateKeyStr string) (*ecdsa.PrivateKey, error) {
+	privateKeyBytes, err := hex.DecodeString(privateKeyStr)
+	if err != nil {
+		return nil, err
+	}
+	d := new(big.Int).SetBytes(privateKeyBytes)
+	return &ecdsa.PrivateKey{
+		PublicKey: ecdsa.PublicKey{
+			Curve: elliptic.P256(),
+			X:     nil,
+			Y:     nil,
+		},
+		D: d,
+	}, nil
+}
+
+func StringToPublicKey(publicKeyStr string) (*ecdsa.PublicKey, error) {
+	publicKeyBytes, err := hex.DecodeString(publicKeyStr)
+	if err != nil {
+		return nil, err
+	}
+	x := new(big.Int).SetBytes(publicKeyBytes[:len(publicKeyBytes)/2])
+	y := new(big.Int).SetBytes(publicKeyBytes[len(publicKeyBytes)/2:])
+	return &ecdsa.PublicKey{
+		Curve: elliptic.P256(),
+		X:     x,
+		Y:     y,
+	}, nil
+}
+
+func StringToSignature(signatureStr string) (*Signature, error) {
+	signatureBytes, err := hex.DecodeString(signatureStr)
+	if err != nil {
+		return nil, err
+	}
+	r := new(big.Int).SetBytes(signatureBytes[:len(signatureBytes)/2])
+	s := new(big.Int).SetBytes(signatureBytes[len(signatureBytes)/2:])
+	return &Signature{
+		R: r,
+		S: s,
+	}, nil
 }

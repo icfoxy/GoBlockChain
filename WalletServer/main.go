@@ -7,6 +7,7 @@ func main() {
 	ws.AddHandlerFunc("/TestAlive", TestAliveHandler)
 	ws.AddHandlerFunc("/index", OpenIndexHandler)
 	ws.AddHandlerFunc("/CreateNewWallet", CreateWalletHandler)
+	ws.AddHandlerFunc("/Sign", SignHandler)
 	fmt.Println("server starts at:8089")
 	ws.Run()
 }
