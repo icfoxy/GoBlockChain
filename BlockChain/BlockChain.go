@@ -98,7 +98,6 @@ func (bc *BlockChain) ValidProof(guessBlock *Block) bool {
 	return guessHashstr[:difficulty] == zeros
 }
 
-// TODO:验证合理性
 func (bc *BlockChain) ProofOfWork(stop chan bool, start chan bool) *Block {
 	transactions := bc.CopyTransactionsFromPool()
 	guessBlock := NewBlock(len(bc.Chain), 0, bc.Chain[len(bc.Chain)-1].Hash(), transactions)
@@ -119,10 +118,8 @@ func (bc *BlockChain) ProofOfWork(stop chan bool, start chan bool) *Block {
 	return guessBlock
 }
 
-// TODO:验证合理性
 func (bc *BlockChain) Mine(minerAddr string, stop chan bool, start chan bool) *Block {
 	fmt.Println("Check pool and try mining...")
-	//TODO:记得改回来
 	if bc.TransactionPool == nil {
 		return nil
 	}

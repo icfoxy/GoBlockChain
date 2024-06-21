@@ -34,7 +34,6 @@ func TestAliveHandler(w http.ResponseWriter, r *http.Request) {
 	GoTools.RespondByJSON(w, 200, "I AM ALIVE")
 }
 
-// TODO:可能有bug，要优化
 func PushTransactionHandler(w http.ResponseWriter, r *http.Request) {
 	stop <- true
 	log.Println("receive push request")
