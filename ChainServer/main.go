@@ -6,9 +6,13 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 )
+
+var stop = make(chan bool, 1)
+var start = make(chan bool, 1)
 
 func init() {
 	transport := &http.Transport{
@@ -56,5 +60,18 @@ func main() {
 	server.AddHandlerFunc("/GetChain", GetChainHandler)
 	server.AddHandlerFunc("/PushTransaction", PushTransactionHandler)
 	server.AddHandlerFunc("/UpdatePool", UpdatePoolHandler)
+	server.AddHandlerFunc("/DelayMining", DelayMiningHandler)
+	server.AddHandlerFunc("/AskForChainUpdate", AskForChainUpdate)
+	server.AddHandlerFunc("/ReceiveChain", ReceiveChain)
+	go func() {
+		for {
+			result := MainChain.Mine("test", stop, start)
+			if result == nil {
+				time.Sleep(2 * time.Second)
+			} else {
+				AskForChainUpdate(*new(http.ResponseWriter), new(http.Request))
+			}
+		}
+	}()
 	server.Run()
 }

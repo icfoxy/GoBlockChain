@@ -5,10 +5,11 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 )
 
-const difficulty int = 4
+const difficulty int = 6
 const Reward int = 2
 const MainNetAddr = "BlockChainMainNet"
 
@@ -97,23 +98,42 @@ func (bc *BlockChain) ValidProof(guessBlock *Block) bool {
 	return guessHashstr[:difficulty] == zeros
 }
 
-func (bc *BlockChain) ProofOfWork() *Block {
+// TODO:验证合理性
+func (bc *BlockChain) ProofOfWork(stop chan bool, start chan bool) *Block {
 	transactions := bc.CopyTransactionsFromPool()
 	guessBlock := NewBlock(len(bc.Chain), 0, bc.Chain[len(bc.Chain)-1].Hash(), transactions)
 	for !bc.ValidProof(guessBlock) {
-		guessBlock.Nonce++
+		select {
+		case <-stop:
+			log.Println("Mine has stopped")
+			<-start
+			return nil
+		default:
+			guessBlock.Nonce++
+			if guessBlock.Nonce%10000 == 0 {
+				log.Println("nonce reach:", guessBlock.Nonce)
+			}
+		}
 	}
+	fmt.Println("Mine done")
 	return guessBlock
 }
 
-func (bc *BlockChain) Mine(minerAddr string) *Block {
+// TODO:验证合理性
+func (bc *BlockChain) Mine(minerAddr string, stop chan bool, start chan bool) *Block {
+	fmt.Println("Check pool and try mining...")
+	//TODO:记得改回来
 	if bc.TransactionPool == nil {
 		return nil
 	}
 	bc.PushTransaction(MainNetAddr, minerAddr, Reward, "Get Reward")
-	block := bc.ProofOfWork()
+	block := bc.ProofOfWork(stop, start)
+	if block == nil {
+		return nil
+	}
 	bc.Chain = append(bc.Chain, block)
 	bc.TransactionPool = nil
+	bc.Print()
 	return block
 }
 

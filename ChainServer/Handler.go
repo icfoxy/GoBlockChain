@@ -3,11 +3,15 @@ package main
 import (
 	"bytes"
 	"crypto/ecdsa"
+	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"sync"
+	"time"
 
 	blockchain "github.com/icfoxy/GoBlockChain/BlockChain"
 	"github.com/icfoxy/GoTools"
@@ -32,6 +36,7 @@ func TestAliveHandler(w http.ResponseWriter, r *http.Request) {
 
 // TODO:可能有bug，要优化
 func PushTransactionHandler(w http.ResponseWriter, r *http.Request) {
+	stop <- true
 	log.Println("receive push request")
 	// 读取请求体并存储以便后续使用
 	bodyBytes, err := ioutil.ReadAll(r.Body)
@@ -43,6 +48,7 @@ func PushTransactionHandler(w http.ResponseWriter, r *http.Request) {
 	transaction, publicKey, signature := GetTansactionDataFromBody(bytes.NewReader(bodyBytes))
 	result := MainChain.ValidAndPushTransaction(publicKey, *signature, transaction)
 	MainChain.Print()
+	start <- true
 	if result {
 		GoTools.RespondByJSON(w, 200, "TransAction Pushed")
 		// 使用并发发送请求
@@ -51,11 +57,10 @@ func PushTransactionHandler(w http.ResponseWriter, r *http.Request) {
 			wg.Add(1)
 			go func(addr string) {
 				defer wg.Done()
-				resp, err := client.Post("http://"+addr+"/UpdatePool", "json", bytes.NewReader(bodyBytes))
+				_, err := client.Post("http://"+addr+"/UpdatePool", "json", bytes.NewReader(bodyBytes))
 				if err != nil {
 					log.Println(addr, "not reachable")
 				}
-				log.Println(resp)
 			}(v)
 		}
 		wg.Wait() // 等待所有请求完成
@@ -65,6 +70,7 @@ func PushTransactionHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdatePoolHandler(w http.ResponseWriter, r *http.Request) {
+	stop <- true
 	log.Println("receive push request")
 	// 读取请求体并存储以便后续使用
 	bodyBytes, err := ioutil.ReadAll(r.Body)
@@ -81,6 +87,15 @@ func UpdatePoolHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		GoTools.RespondByErr(w, 801, "TransAction not added", "high")
 	}
+	// 设置随机数种子
+	rand.Seed(time.Now().UnixNano())
+
+	// 生成一个0-2秒的随机暂停时间
+	pause := time.Duration(rand.Intn(3)) * time.Second
+
+	// 暂停指定的时间
+	time.Sleep(pause)
+	start <- true
 }
 
 func GetTansactionDataFromBody(body io.Reader) (blockchain.Transaction, *ecdsa.PublicKey, *blockchain.Signature) {
@@ -104,4 +119,53 @@ func GetTansactionDataFromBody(body io.Reader) (blockchain.Transaction, *ecdsa.P
 		panic(err)
 	}
 	return transaction, publicKey, signature
+}
+
+func DelayMiningHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("stopping mining...")
+	stop <- true
+	time.Sleep(3 * time.Second)
+	start <- true
+	GoTools.RespondByJSON(w, 200, "mine restarted")
+}
+
+// TODO:验证可行性
+func AskForChainUpdate(w http.ResponseWriter, r *http.Request) {
+	jsonData, err := json.Marshal(MainChain)
+	if err != nil {
+		panic(err)
+	}
+	var wg sync.WaitGroup
+	for _, v := range OtherAddr {
+		wg.Add(1)
+		go func(addr string) {
+			defer wg.Done()
+			req, err := http.NewRequest("POST", "http://"+addr+"/ReceiveChain", bytes.NewBuffer(jsonData))
+			if err != nil {
+				panic(err)
+			}
+			req.Header.Set("Content-Type", "application/json")
+			_, err = client.Do(req)
+			if err != nil {
+				log.Println(addr, "not reachable")
+			}
+		}(v)
+	}
+	wg.Wait()
+}
+
+func ReceiveChain(w http.ResponseWriter, r *http.Request) {
+	stop <- true
+	newChain := new(blockchain.BlockChain)
+	err := GoTools.GetAnyFromBody(r.Body, newChain)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("receive chain:")
+	newChain.Print()
+	if ValidChain(newChain) && len(newChain.Chain) >= len(MainChain.Chain) {
+		fmt.Println("MainChain updated")
+		MainChain = newChain
+	}
+	start <- true
 }
