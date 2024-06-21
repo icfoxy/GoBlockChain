@@ -1,4 +1,5 @@
-使用方法： 1.编译WalletServer、ChainServer，得到WalletServer.exe、ChainServer.exe  
+使用方法： 
+1.编译WalletServer、ChainServer，得到WalletServer.exe、ChainServer.exe  
 2.运行WalletServer.exe，访问http://localhost:8089/CreateNewWallet 得到钥匙串、地址  
 3.配置.env，格式为nodeX="url"，其中X为任意数字  
 4，使用多个终端，输入 .\ChainServer.exe -nodeName=nodeX启动对应节点，其中X为第3步配置数字  
